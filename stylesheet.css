@@ -1,0 +1,15 @@
+.showdesktop-applet {
+    border: 0px solid rgba(255, 255, 255, 0.2);
+}
+.showdesktop-applet_border-left {
+    border-left: 1px;
+}
+.showdesktop-applet_border-right {
+    border-right: 1px;
+}
+.showdesktop-applet_border-top {
+    border-top: 1px;
+}
+.showdesktop-applet_border-bottom {
+    border-bottom: 1px;
+}

@@ -1,0 +1,6 @@
+{
+    "description": "Click to show/hide desktop, scroll to switch workspace.",
+    "uuid": "showdesktop@chepkun",
+    "name": "ChepKun - Show Desktop",
+    "icon": "user-desktop"
+}
