@@ -154,11 +154,14 @@ ShowDesktopApplet.prototype = {
     addWindowsOpacity: function(time) {
         // add blur if enabled
         if (this.blur) {
-            for (let window of global.get_window_actors()) {         
-                if (!window.showDesktopBlurEffect) {
-                    window.showDesktopBlurEffect = new Clutter.BlurEffect();
+            for (let window of global.get_window_actors()) {
+                // don't add blur to icons on the desktop
+                if (window.meta_window.get_title() !== "Desktop") {     
+                    if (!window.showDesktopBlurEffect) {
+                        window.showDesktopBlurEffect = new Clutter.BlurEffect();
+                    }
+                    window.add_effect_with_name("blur", window.showDesktopBlurEffect);
                 }
-                window.add_effect_with_name("blur", window.showDesktopBlurEffect);
             }
         }
         // set opacity         
