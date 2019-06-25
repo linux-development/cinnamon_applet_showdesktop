@@ -27,40 +27,31 @@ const Clutter = imports.gi.Clutter;
 const SignalManager = imports.misc.signalManager;
 const GLib = imports.gi.GLib;
 
-function ShowDesktopApplet(metadata, orientation, panelHeight, instance_id) {
-    this._init(metadata, orientation, panelHeight, instance_id);
-}
-
-function main(metadata, orientation, panelHeight, instance_id) {
-    return new ShowDesktopApplet(metadata, orientation, panelHeight, instance_id);
-}
-
-ShowDesktopApplet.prototype = {
-    __proto__: Applet.IconApplet.prototype,
+class ShowDesktopApplet extends Applet.IconApplet {
 
     // default methods
     
-    _init: function(metadata, orientation, panelHeight, instance_id) {
+    constructor(metadata, orientation, panelHeight, instanceId) {
         // initialize applet
-        Applet.IconApplet.prototype._init.call(this, orientation, panelHeight, instance_id);
+        super(orientation, panelHeight, instanceId);
         Gtk.IconTheme.get_default().append_search_path(metadata.path);
         // create settings
-        this.settings = new Settings.AppletSettings(this, metadata.uuid, this.instance_id);
+        this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
         // call handler
         this.handleInit();
-    },
+    }
 
-    on_applet_clicked: function(event) {
+    on_applet_clicked(event) {
         this.handleClick(event);
-    },
+    }
     
-    on_applet_removed_from_panel: function() {
+    on_applet_removed_from_panel() {
         this.handleRemoveFromPanel();
-    },
+    }
     
     // custom handlers
     
-    handleInit: function() {
+    handleInit() {
         // bind settings
         this.settings.bindProperty(Settings.BindingDirection.IN, "showIcon", "showIcon", this.handleSettings, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "iconName", "iconName", this.handleSettings, null);
@@ -82,9 +73,9 @@ ShowDesktopApplet.prototype = {
         this.styleClassBackup = this.actor.styleClass;
         // apply settings
         this.handleSettings();
-    },
+    }
 
-    handleSettings: function() {
+    handleSettings() {
         // apply icon
         if (this.showIcon) {
             const icon_file = Gio.File.new_for_path(this.iconName);
@@ -102,28 +93,28 @@ ShowDesktopApplet.prototype = {
         if (!this.enablePeek || !this.blur) {
             this.clearWindowsBlur();
         }
-    },
+    }
 
-    handleClick: function(event) {
+    handleClick(event) {
         global.screen.toggle_desktop(global.get_current_time());
         this.clearPeekTimeout();
         this.removeWindowsOpacity(0);
         this.peekPerformed = false;
-    },
+    }
 
-    handleScroll: function(actor, event) {
+    handleScroll(actor, event) {
         this.clearPeekTimeout();
         //switch workspace
         const index = global.screen.get_active_workspace_index() + event.get_scroll_direction() * 2 - 1;
         if (global.screen.get_workspace_by_index(index) !== null) {
             global.screen.get_workspace_by_index(index).activate(global.get_current_time());
         }
-    },
+    }
 
-    handleMouseEnter: function(event) {
+    handleMouseEnter(event) {
         if (this.enablePeek){
             this.clearPeekTimeout();
-            this.peekTimeoutId = Mainloop.timeout_add(400, Lang.bind(this, function () {
+            this.peekTimeoutId = Mainloop.timeout_add(400, Lang.bind(this, function() {
                 if (this.actor.hover &&
                         !this._applet_context_menu.isOpen &&
                             !global.settings.get_boolean("panel-edit-mode")) {
@@ -132,26 +123,26 @@ ShowDesktopApplet.prototype = {
                 }
             }));
         }
-    },
+    }
 
-    handleMouseLeave: function(event) {
+    handleMouseLeave(event) {
+        this.clearPeekTimeout();
         if (this.peekPerformed) {
             this.removeWindowsOpacity(0.2);
             this.peekPerformed = false;
         }
-        this.clearPeekTimeout();
-    },
+    }
 
-    handleRemoveFromPanel: function() {
+    handleRemoveFromPanel() {
         this.removeWindowsOpacity(0);
         this.clearWindowsBlur();
         this.settings.finalize();
         this.signals.disconnectAllSignals();
-    },
+    }
 
     // custom methods
 
-    addWindowsOpacity: function(time) {
+    addWindowsOpacity(time) {
         // add blur if enabled
         if (this.blur) {
             for (let window of global.get_window_actors()) {
@@ -170,9 +161,9 @@ ShowDesktopApplet.prototype = {
             "time": time,
             "transition": "easeOutSine"
         });
-    },
+    }
 
-    removeWindowsOpacity: function(time) {
+    removeWindowsOpacity(time) {
         // remove blur if enabled
         if (this.blur) {
             for (let window of global.get_window_actors()) {         
@@ -187,31 +178,31 @@ ShowDesktopApplet.prototype = {
             "time": time,
             "transition": "easeOutSine"
         });
-    },
+    }
     
-    setWindowsOpacity: function(params) {
+    setWindowsOpacity(params) {
         Tweener.addTween(global.window_group, params);
         if (this.opacifyDesklets) {
             Tweener.addTween(Main.deskletContainer.actor, params);
         }
-    },
+    }
 
-    updateStyles: function() {
+    updateStyles() {
         this.actor.styleClass = this.styleClassBackup + " showdesktop-applet " + (
             this.borderPlacement && this.borderPlacement !== "none" ?
             "showdesktop-applet_border-" + this.borderPlacement:
             ""
         );
-    },
+    }
     
-    clearPeekTimeout: function() {
+    clearPeekTimeout() {
         if (this.peekTimeoutId && !this.peekPerformed) {
             Mainloop.source_remove(this.peekTimeoutId);
         }
         this.peekTimeoutId = null;
-    },
+    }
 
-    clearWindowsBlur: function() {
+    clearWindowsBlur() {
         for (let window of global.get_window_actors()) {         
             if (window.showDesktopBlurEffect) {
                 window.showDesktopBlurEffect = null;
@@ -220,3 +211,7 @@ ShowDesktopApplet.prototype = {
     }
 
 };
+
+function main(metadata, orientation, panelHeight, instanceId) {
+    return new ShowDesktopApplet(metadata, orientation, panelHeight, instanceId);
+}
