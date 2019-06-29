@@ -1,5 +1,5 @@
 {
-    "description": "Click to show/hide desktop, scroll to switch workspace.",
+    "description": "Click to show/hide desktop, scroll to switch workspace, middle click to activate Expo.",
     "uuid": "showdesktop@chepkun",
     "name": "ChepKun - Show Desktop",
     "icon": "user-desktop"
