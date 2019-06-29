@@ -7,7 +7,7 @@
     "type" : "checkbox",
     "default": true,
     "description": "Show icon",
-    "tooltip": "May need to reload Cinnamon"
+    "tooltip": "Show/Hide the icon in the panel"
  },
  "iconName": {
     "type": "iconfilechooser",

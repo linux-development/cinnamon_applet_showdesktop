@@ -27,7 +27,7 @@ const Clutter = imports.gi.Clutter;
 const SignalManager = imports.misc.signalManager;
 const GLib = imports.gi.GLib;
 
-class ShowDesktopApplet extends Applet.IconApplet {
+class ShowDesktopApplet extends Applet.TextIconApplet {
 
     // default methods
     
@@ -84,6 +84,8 @@ class ShowDesktopApplet extends Applet.IconApplet {
             } else {
                this.set_applet_icon_name(this.iconName);
             }
+        } else {
+            this.hide_applet_icon();
         }
         // apply width
         this.actor.width = this.width;
