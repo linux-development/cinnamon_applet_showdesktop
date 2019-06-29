@@ -48,6 +48,11 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     on_applet_removed_from_panel() {
         this.handleRemoveFromPanel();
     }
+
+    _onButtonPressEvent(actor, event) {
+        this.handleButtonPressEvent(actor, event);
+        return Applet.Applet.prototype._onButtonPressEvent.call(this, actor, event);
+    }
     
     // custom handlers
     
@@ -99,13 +104,22 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
 
     handleClick(event) {
         global.screen.toggle_desktop(global.get_current_time());
-        this.clearPeekTimeout();
-        this.removeWindowsOpacity(0);
-        this.peekPerformed = false;
+        this.resetPeek(0);
+    }
+
+    handleButtonPressEvent(actor, event) {
+        // for middle button click
+        if (event.get_button() === 2) {
+            this.resetPeek(0);
+            // call Expo
+            if (!Main.expo.animationInProgress) {
+                Main.expo.toggle();
+            }
+        }
     }
 
     handleScroll(actor, event) {
-        this.clearPeekTimeout();
+        this.resetPeek(0);
         //switch workspace
         const index = global.screen.get_active_workspace_index() + event.get_scroll_direction() * 2 - 1;
         if (global.screen.get_workspace_by_index(index) !== null) {
@@ -128,21 +142,25 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     handleMouseLeave(event) {
-        this.clearPeekTimeout();
-        if (this.peekPerformed) {
-            this.removeWindowsOpacity(0.2);
-            this.peekPerformed = false;
-        }
+        this.resetPeek(0.2);
     }
 
     handleRemoveFromPanel() {
-        this.removeWindowsOpacity(0);
+        this.resetPeek(0);
         this.clearWindowsBlur();
         this.settings.finalize();
         this.signals.disconnectAllSignals();
     }
 
     // custom methods
+
+    resetPeek(time) {
+        this.clearPeekTimeout();
+        if (this.peekPerformed) {
+            this.removeWindowsOpacity(time);
+            this.peekPerformed = false;
+        }
+    }
 
     addWindowsOpacity(time) {
         // add blur if enabled
@@ -166,6 +184,12 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     removeWindowsOpacity(time) {
+        // set opacity
+        this.setWindowsOpacity({
+            "opacity": 255,
+            "time": time,
+            "transition": "easeOutSine"
+        });        
         // remove blur if enabled
         if (this.blur) {
             for (let window of global.get_window_actors()) {         
@@ -174,12 +198,6 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
                 }
             }
         }
-        // set opacity
-        this.setWindowsOpacity({
-            "opacity": 255,
-            "time": time,
-            "transition": "easeOutSine"
-        });
     }
     
     setWindowsOpacity(params) {
