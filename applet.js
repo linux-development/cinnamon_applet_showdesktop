@@ -34,6 +34,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     constructor(metadata, orientation, panelHeight, instanceId) {
         // initialize applet
         super(orientation, panelHeight, instanceId);
+        this.setAllowedLayout(Applet.AllowedLayout.BOTH);
         Gtk.IconTheme.get_default().append_search_path(metadata.path);
         // create settings
         this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
