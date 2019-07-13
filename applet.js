@@ -20,7 +20,6 @@ const Settings = imports.ui.settings;
 const Gio = imports.gi.Gio;
 const Main = imports.ui.main;
 const Lang = imports.lang;
-const Mainloop = imports.mainloop;
 const Tweener = imports.ui.tweener;
 const Gtk = imports.gi.Gtk;
 const Clutter = imports.gi.Clutter;
@@ -131,14 +130,14 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     handleMouseEnter(event) {
         if (this.enablePeek){
             this.clearPeekTimeout();
-            this.peekTimeoutId = Mainloop.timeout_add(400, Lang.bind(this, function() {
+            this.peekTimeoutId = setTimeout(() => {
                 if (this.actor.hover &&
                         !this._applet_context_menu.isOpen &&
                             !global.settings.get_boolean("panel-edit-mode")) {
                     this.peekPerformed = true;
                     this.addWindowsOpacity(0.3);
                 }
-            }));
+            }, 500);
         }
     }
 
@@ -218,7 +217,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     
     clearPeekTimeout() {
         if (this.peekTimeoutId && !this.peekPerformed) {
-            Mainloop.source_remove(this.peekTimeoutId);
+            clearTimeout(this.peekTimeoutId);
         }
         this.peekTimeoutId = null;
     }
