@@ -67,7 +67,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         this.settings.bindProperty(Settings.BindingDirection.IN, "peekOpacity", "peekOpacity", null, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "blur", "blur", this.handleSettings, null);
         // bind events and signals
-        this.signals = new SignalManager.SignalManager(this);
+        this.signals = new SignalManager.SignalManager(null);
         this.actor.connect("enter-event", Lang.bind(this, this.handleMouseEnter));
         this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));
         this.signals.connect(global.stage, "notify::key-focus", Lang.bind(this, this.handleMouseEnter));
