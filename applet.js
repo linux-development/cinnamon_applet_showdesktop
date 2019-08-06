@@ -63,6 +63,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             this.settings.bind("buttonWidth", "buttonWidth", this.handleSettings);
             this.settings.bind("middleClickAction", "middleClickAction", null);
             this.settings.bind("enablePeek", "enablePeek", this.handleSettings);
+            this.settings.bind("peekDelay", "peekDelay", null);
             this.settings.bind("peekOpacity", "peekOpacity", null);
             this.settings.bind("blur", "blur", this.handleSettings);
             this.settings.bind("opacifyDesklets", "opacifyDesklets", null);
@@ -151,7 +152,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
                     this.peekPerformed = true;
                     this.addWindowsOpacity(0.3);
                 }
-            }, 500);
+            }, this.peekDelay);
         }
     }
 
