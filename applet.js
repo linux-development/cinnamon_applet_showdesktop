@@ -16,6 +16,7 @@
 */
 
 const Applet = imports.ui.applet;
+const St = imports.gi.St;
 const Settings = imports.ui.settings;
 const Gio = imports.gi.Gio;
 const Main = imports.ui.main;
@@ -34,11 +35,15 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         // initialize applet
         super(orientation, panelHeight, instanceId);
         // call handler
-        this.handleInit(metadata, instanceId);
+        this.handleInit(metadata, orientation, instanceId);
     }
     
     on_applet_removed_from_panel() {
         this.handleRemoveFromPanel();
+    }
+
+    on_orientation_changed(orientation) {
+        this.handleOrientation(orientation);
     }
 
     _onButtonPressEvent(actor, event) {
@@ -48,22 +53,22 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     
     // custom handlers
     
-    handleInit(metadata, instanceId) {
+    handleInit(metadata, orientation, instanceId) {
         try {
             // configure applet
             Gtk.IconTheme.get_default().append_search_path(metadata.path);
             this.setAllowedLayout(Applet.AllowedLayout.BOTH);
             // bind settings
             this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "showIcon", "showIcon", this.handleSettings, null);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "iconName", "iconName", this.handleSettings, null);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "borderPlacement", "borderPlacement", this.handleSettings, null);
-            this.settings.bindProperty(Settings.BindingDirection.TWO_WAY, "buttonWidth", "buttonWidth", this.handleSettings, null);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "middleClickAction", "middleClickAction", null, null);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "enablePeek", "enablePeek", this.handleSettings, null);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "peekOpacity", "peekOpacity", null, null);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "blur", "blur", this.handleSettings, null);
-            this.settings.bindProperty(Settings.BindingDirection.IN, "opacifyDesklets", "opacifyDesklets", null, null);
+            this.settings.bind("showIcon", "showIcon", this.handleSettings);
+            this.settings.bind("iconName", "iconName", this.handleSettings);
+            this.settings.bind("borderPlacement", "borderPlacement", this.handleSettings);
+            this.settings.bind("buttonWidth", "buttonWidth", this.handleSettings);
+            this.settings.bind("middleClickAction", "middleClickAction", null);
+            this.settings.bind("enablePeek", "enablePeek", this.handleSettings);
+            this.settings.bind("peekOpacity", "peekOpacity", null);
+            this.settings.bind("blur", "blur", this.handleSettings);
+            this.settings.bind("opacifyDesklets", "opacifyDesklets", null);
             // connect events
             this.actor.connect("enter-event", Lang.bind(this, this.handleMouseEnter));
             this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));        
@@ -75,11 +80,16 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             this.peekPerformed = false;
             this.peekTimeoutId = null;
             this.styleClassBackup = this.actor.styleClass;
-            // apply settings
-            this.handleSettings();
+            // set orientation and apply settings
+            this.handleOrientation(orientation);
         } catch (e) {
             global.logError(e);
         }
+    }
+
+    handleOrientation(orientation) {
+        this.orientation = orientation;
+        this.handleSettings();
     }
 
     handleSettings() {
@@ -95,7 +105,11 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             this.hide_applet_icon();
         }
         // apply width
-        this.actor.width = this.buttonWidth;
+        if (this.orientation === St.Side.TOP || this.orientation === St.Side.BOTTOM) {
+            this.actor.width = this.buttonWidth;
+        } else {
+            this.actor.height = this.buttonWidth;
+        }
         // apply styles
         this.updateStyles();
         // if blur or peek is disabled, check windows to remove blur effect
