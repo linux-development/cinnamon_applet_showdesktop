@@ -33,13 +33,8 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     constructor(metadata, orientation, panelHeight, instanceId) {
         // initialize applet
         super(orientation, panelHeight, instanceId);
-        // configure applet
-        this.setAllowedLayout(Applet.AllowedLayout.BOTH);
-        Gtk.IconTheme.get_default().append_search_path(metadata.path);
-        // create settings
-        this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
         // call handler
-        this.handleInit();
+        this.handleInit(metadata, instanceId);
     }
 
     on_applet_clicked(event) {
@@ -57,8 +52,12 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     
     // custom handlers
     
-    handleInit() {
+    handleInit(metadata, instanceId) {
+        // configure applet
+        Gtk.IconTheme.get_default().append_search_path(metadata.path);
+        this.setAllowedLayout(Applet.AllowedLayout.BOTH);
         // bind settings
+        this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
         this.settings.bindProperty(Settings.BindingDirection.IN, "showIcon", "showIcon", this.handleSettings, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "iconName", "iconName", this.handleSettings, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "borderPlacement", "borderPlacement", this.handleSettings, null);
@@ -67,7 +66,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         this.settings.bindProperty(Settings.BindingDirection.IN, "opacifyDesklets", "opacifyDesklets", null, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "peekOpacity", "peekOpacity", null, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "blur", "blur", this.handleSettings, null);
-        // bind events
+        // connect events
         this.actor.connect("enter-event", Lang.bind(this, this.handleMouseEnter));
         this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));        
         this.actor.connect("scroll-event", Lang.bind(this, this.handleScroll));
@@ -105,37 +104,42 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     handleClick(event) {
-        global.screen.toggle_desktop(global.get_current_time());
-        this.resetPeek(0);
+        if (!this.isPanelEditModeEnabled()) {
+            global.screen.toggle_desktop(global.get_current_time());
+            this.resetPeek(0);
+        }
     }
 
     handleButtonPressEvent(actor, event) {
-        // for middle button click
-        if (event.get_button() === 2) {
-            this.resetPeek(0);
-            // call Expo
-            if (!Main.expo.animationInProgress) {
-                Main.expo.toggle();
+        if (!this.isPanelEditModeEnabled()) {
+            // for middle button click
+            if (event.get_button() === 2) {
+                this.resetPeek(0);
+                // call Expo
+                if (!Main.expo.animationInProgress) {
+                    Main.expo.toggle();
+                }
             }
         }
     }
 
     handleScroll(actor, event) {
-        this.resetPeek(0);
-        //switch workspace
-        const index = global.screen.get_active_workspace_index() + event.get_scroll_direction() * 2 - 1;
-        if (global.screen.get_workspace_by_index(index) !== null) {
-            global.screen.get_workspace_by_index(index).activate(global.get_current_time());
+        if (!this.isPanelEditModeEnabled()) {
+            this.resetPeek(0);
+            //switch workspace
+            const index = global.screen.get_active_workspace_index() + event.get_scroll_direction() * 2 - 1;
+            if (global.screen.get_workspace_by_index(index) !== null) {
+                global.screen.get_workspace_by_index(index).activate(global.get_current_time());
+            }
         }
     }
 
     handleMouseEnter(event) {
-        if (this.enablePeek){
+        if (!this.isPanelEditModeEnabled() && this.enablePeek) {
             this.clearPeekTimeout();
             this.peekTimeoutId = setTimeout(() => {
                 if (this.actor.hover &&
-                        !this._applet_context_menu.isOpen &&
-                            !global.settings.get_boolean("panel-edit-mode")) {
+                        !this._applet_context_menu.isOpen) {
                     this.peekPerformed = true;
                     this.addWindowsOpacity(0.3);
                 }
@@ -230,6 +234,10 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
                 window.showDesktopBlurEffect = null;
             }
         }
+    }
+
+    isPanelEditModeEnabled() {
+        return global.settings.get_boolean("panel-edit-mode");
     }
 
 };
