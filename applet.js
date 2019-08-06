@@ -36,49 +36,50 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         // call handler
         this.handleInit(metadata, instanceId);
     }
-
-    on_applet_clicked(event) {
-        this.handleClick(event);
-    }
     
     on_applet_removed_from_panel() {
         this.handleRemoveFromPanel();
     }
 
     _onButtonPressEvent(actor, event) {
-        this.handleButtonPressEvent(actor, event);
+        this.handleButtonPressEvent(event);
         return Applet.Applet.prototype._onButtonPressEvent.call(this, actor, event);
     }
     
     // custom handlers
     
     handleInit(metadata, instanceId) {
-        // configure applet
-        Gtk.IconTheme.get_default().append_search_path(metadata.path);
-        this.setAllowedLayout(Applet.AllowedLayout.BOTH);
-        // bind settings
-        this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "showIcon", "showIcon", this.handleSettings, null);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "iconName", "iconName", this.handleSettings, null);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "borderPlacement", "borderPlacement", this.handleSettings, null);
-        this.settings.bindProperty(Settings.BindingDirection.TWO_WAY, "width", "width", this.handleSettings, null);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "enablePeek", "enablePeek", this.handleSettings, null);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "opacifyDesklets", "opacifyDesklets", null, null);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "peekOpacity", "peekOpacity", null, null);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "blur", "blur", this.handleSettings, null);
-        // connect events
-        this.actor.connect("enter-event", Lang.bind(this, this.handleMouseEnter));
-        this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));        
-        this.actor.connect("scroll-event", Lang.bind(this, this.handleScroll));
-        // connect signals
-        this.signals = new SignalManager.SignalManager(null);
-        this.signals.connect(global.stage, "notify::key-focus", Lang.bind(this, this.handleMouseEnter));
-        // set default values
-        this.peekPerformed = false;
-        this.peekTimeoutId = null;
-        this.styleClassBackup = this.actor.styleClass;
-        // apply settings
-        this.handleSettings();
+        try {
+            // configure applet
+            Gtk.IconTheme.get_default().append_search_path(metadata.path);
+            this.setAllowedLayout(Applet.AllowedLayout.BOTH);
+            // bind settings
+            this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "showIcon", "showIcon", this.handleSettings, null);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "iconName", "iconName", this.handleSettings, null);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "borderPlacement", "borderPlacement", this.handleSettings, null);
+            this.settings.bindProperty(Settings.BindingDirection.TWO_WAY, "buttonWidth", "buttonWidth", this.handleSettings, null);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "middleClickAction", "middleClickAction", null, null);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "enablePeek", "enablePeek", this.handleSettings, null);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "peekOpacity", "peekOpacity", null, null);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "blur", "blur", this.handleSettings, null);
+            this.settings.bindProperty(Settings.BindingDirection.IN, "opacifyDesklets", "opacifyDesklets", null, null);
+            // connect events
+            this.actor.connect("enter-event", Lang.bind(this, this.handleMouseEnter));
+            this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));        
+            this.actor.connect("scroll-event", Lang.bind(this, this.handleScroll));
+            // connect signals
+            this.signals = new SignalManager.SignalManager(null);
+            this.signals.connect(global.stage, "notify::key-focus", Lang.bind(this, this.handleMouseEnter));
+            // set default values
+            this.peekPerformed = false;
+            this.peekTimeoutId = null;
+            this.styleClassBackup = this.actor.styleClass;
+            // apply settings
+            this.handleSettings();
+        } catch (e) {
+            global.logError(e);
+        }
     }
 
     handleSettings() {
@@ -94,7 +95,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             this.hide_applet_icon();
         }
         // apply width
-        this.actor.width = this.width;
+        this.actor.width = this.buttonWidth;
         // apply styles
         this.updateStyles();
         // if blur or peek is disabled, check windows to remove blur effect
@@ -103,33 +104,29 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         }
     }
 
-    handleClick(event) {
+    handleButtonPressEvent(event) {
         if (!this.isPanelEditModeEnabled()) {
-            global.screen.toggle_desktop(global.get_current_time());
+            // remove peek if any button is pressed
             this.resetPeek(0);
-        }
-    }
-
-    handleButtonPressEvent(actor, event) {
-        if (!this.isPanelEditModeEnabled()) {
-            // for middle button click
-            if (event.get_button() === 2) {
-                this.resetPeek(0);
-                // call Expo
-                if (!Main.expo.animationInProgress) {
-                    Main.expo.toggle();
-                }
-            }
-        }
-    }
-
-    handleScroll(actor, event) {
-        if (!this.isPanelEditModeEnabled()) {
-            this.resetPeek(0);
-            //switch workspace
-            const index = global.screen.get_active_workspace_index() + event.get_scroll_direction() * 2 - 1;
-            if (global.screen.get_workspace_by_index(index) !== null) {
-                global.screen.get_workspace_by_index(index).activate(global.get_current_time());
+            // do action
+            switch (event.get_button()) {
+                // for left button click
+                case 1:
+                    // hide/show all windows
+                    global.screen.toggle_desktop(global.get_current_time());
+                    break;
+                // for middle button click
+                case 2:
+                    if (this.middleClickAction === "expo") {
+                        if (!Main.expo.animationInProgress) {
+                            Main.expo.toggle();
+                        }
+                    } else {
+                        if (!Main.overview.animationInProgress) {
+                            Main.overview.toggle();
+                        }
+                    }
+                    break;
             }
         }
     }
@@ -149,6 +146,17 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
 
     handleMouseLeave(event) {
         this.resetPeek(0.2);
+    }
+
+    handleScroll(actor, event) {
+        if (!this.isPanelEditModeEnabled()) {
+            //switch workspace
+            const index = global.screen.get_active_workspace_index() + event.get_scroll_direction() * 2 - 1;
+            if (global.screen.get_workspace_by_index(index) !== null) {
+                this.resetPeek(0);
+                global.screen.get_workspace_by_index(index).activate(global.get_current_time());
+            }
+        }
     }
 
     handleRemoveFromPanel() {
@@ -197,20 +205,12 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             }
         }
         // set opacity         
-        this.setWindowsOpacity({
-            "opacity": 255 - (255/100 * this.peekOpacity),
-            "time": time,
-            "transition": "easeOutSine"
-        });
+        this.setWindowsOpacity(255 - (255/100 * this.peekOpacity), time);
     }
 
     removeWindowsOpacity(time) {
         // set opacity
-        this.setWindowsOpacity({
-            "opacity": 255,
-            "time": time,
-            "transition": "easeOutSine"
-        });        
+        this.setWindowsOpacity(255, time);        
         // remove blur if enabled
         if (this.blur) {
             for (let window of global.get_window_actors()) {         
@@ -221,7 +221,12 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         }
     }
     
-    setWindowsOpacity(params) {
+    setWindowsOpacity(opacity, time) {
+        const params = {
+            "opacity": opacity,
+            "time": time,
+            "transition": "easeOutSine"
+        };
         Tweener.addTween(global.window_group, params);
         if (this.opacifyDesklets) {
             Tweener.addTween(Main.deskletContainer.actor, params);

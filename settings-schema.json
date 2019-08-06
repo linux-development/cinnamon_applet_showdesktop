@@ -1,79 +1,88 @@
 {
- "headAppearance" : {
-    "type" : "header",
-    "description" : "Appearance"
- },
- "showIcon": {
-    "type" : "checkbox",
-    "default": true,
-    "description": "Show icon",
-    "tooltip": "Show/Hide the icon in the panel"
- },
- "iconName": {
-    "type": "iconfilechooser",
-    "default": "user-desktop",
-    "description" : "The icon to use in the panel:",
-    "tooltip" : "Select an icon file, or you can type an icon name into the entry box, for example: desktop",
-    "dependency" : "showIcon"
- },
- "borderPlacement": {
-    "type": "combobox",
-    "default": "none",
-    "description": "Border placement",
-    "options": {
-      "None": "none",
-      "Left": "left",
-      "Right": "right",
-      "Top": "top",
-      "Bottom": "bottom"
+    "headAppearance": {
+        "type": "header",
+        "description": "Appearance"
     },
-    "tooltip": ""
- },
- "width": {
-    "type": "spinbutton",
-    "default" : 32,
-    "min" : 2,
-    "max" : 50,
-    "step" : 1,
-    "units" : "pixels",
-    "description" : "Applet width in the panel:",
-    "tooltip" : "Increase or decrease this spinner value to make the applet wider or narrower in the panel"
- },
- "divSeparator" : {
-    "type" : "separator"
- },
- "headPeek" : {
-    "type" : "header",
-    "description" : "Peek at desktop"
- },
- "enablePeek" : {
-    "type" : "checkbox",
-    "default" : true,
-    "description": "Opacify windows on hover",
-    "tooltip": "Take a glance at your desktop and desklets."
- },
- "opacifyDesklets" : {
-    "type" : "checkbox",
-    "default" : false,
-    "dependency" : "enablePeek",
-    "description": "Opacify desklets",
-    "tooltip": ""
- },
- "peekOpacity": {
-    "type": "scale",
-    "default" : 80,
-    "min" : 20,
-    "max" : 100,
-    "step" : 10,
-    "dependency" : "enablePeek",
-    "description" : "Opacity level",
-    "tooltip" : ""
- },
- "blur" : {
-    "type" : "checkbox",
-    "default" : true,
-    "dependency" : "enablePeek",
-    "description" : "Blur windows on hover",
-    "tooltip" : ""
- }
+    "showIcon": {
+        "type": "checkbox",
+        "default": true,
+        "description": "Show icon",
+        "tooltip": "Show/Hide icon on the applet"
+    },
+    "iconName": {
+        "type": "iconfilechooser",
+        "default": "user-desktop",
+        "description": "Selected icon",
+        "tooltip": "Select an icon file, or you can type an icon name into the entry box, for example: desktop",
+        "dependency": "showIcon"
+    },
+    "borderPlacement": {
+        "type": "combobox",
+        "default": "none",
+        "description": "Border placement",
+        "options": {
+            "None": "none",
+            "Left": "left",
+            "Right": "right",
+            "Top": "top",
+            "Bottom": "bottom"
+        },
+        "tooltip": ""
+    },
+    "buttonWidth": {
+        "type": "spinbutton",
+        "default": 32,
+        "min": 2,
+        "max": 100,
+        "step": 1,
+        "units": "pixels",
+        "description" : "Applet width in the panel",
+        "tooltip" : "Increase or decrease this spinner value to make the applet wider or narrower in the panel"
+    },
+    "headActions": {
+        "type": "header",
+        "description": "Actions"
+    },
+    "middleClickAction": {
+        "type": "combobox",
+        "default": "expo",
+        "description": "Middle click action",
+        "options": {
+            "Expo": "expo",
+            "Overview": "overview"
+        },
+        "tooltip": ""
+    },
+    "enablePeek": {
+        "type": "checkbox",
+        "default": true,
+        "description": "Enable Peek on mouse hover",
+        "tooltip": "Take a glance at your desktop and desklets."
+    },
+    "headPeek": {
+        "type": "header",
+        "description": "Peek Settings",
+        "dependency": "enablePeek"
+    },
+    "peekOpacity": {
+        "type": "scale",
+        "default" : 80,
+        "min": 20,
+        "max": 100,
+        "step": 10,
+        "description": "Opacity level",
+        "tooltip": ""
+    },
+    "blur": {
+        "type": "checkbox",
+        "default": true,
+        "description": "Blur windows",
+        "tooltip": ""
+    },
+    "opacifyDesklets": {
+        "type": "checkbox",
+        "default": false,
+        "description": "Opacify desklets",
+        "tooltip": ""
+    }
 }
