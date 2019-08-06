@@ -31,10 +31,8 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     // default methods
     
     constructor(metadata, orientation, panelHeight, instanceId) {
-        // initialize applet
         super(orientation, panelHeight, instanceId);
-        // call handler
-        this.handleInit(metadata, orientation, instanceId);
+        this.handleInit(metadata, orientation);
     }
     
     on_applet_removed_from_panel() {
@@ -52,13 +50,13 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     
     // custom handlers
     
-    handleInit(metadata, orientation, instanceId) {
+    handleInit(metadata, orientation) {
         try {
             // configure applet
             Gtk.IconTheme.get_default().append_search_path(metadata.path);
             this.setAllowedLayout(Applet.AllowedLayout.BOTH);
             // bind settings
-            this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
+            this.settings = new Settings.AppletSettings(this, metadata.uuid, this.instance_id);
             this.settings.bind("showIcon", "showIcon", this.handleSettings);
             this.settings.bind("iconName", "iconName", this.handleSettings);
             this.settings.bind("borderPlacement", "borderPlacement", this.handleSettings);
