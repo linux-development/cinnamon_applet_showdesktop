@@ -33,6 +33,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     constructor(metadata, orientation, panelHeight, instanceId) {
         // initialize applet
         super(orientation, panelHeight, instanceId);
+        // configure applet
         this.setAllowedLayout(Applet.AllowedLayout.BOTH);
         Gtk.IconTheme.get_default().append_search_path(metadata.path);
         // create settings
@@ -66,12 +67,13 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         this.settings.bindProperty(Settings.BindingDirection.IN, "opacifyDesklets", "opacifyDesklets", null, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "peekOpacity", "peekOpacity", null, null);
         this.settings.bindProperty(Settings.BindingDirection.IN, "blur", "blur", this.handleSettings, null);
-        // bind events and signals
-        this.signals = new SignalManager.SignalManager(null);
+        // bind events
         this.actor.connect("enter-event", Lang.bind(this, this.handleMouseEnter));
-        this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));
+        this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));        
+        this.actor.connect("scroll-event", Lang.bind(this, this.handleScroll));
+        // connect signals
+        this.signals = new SignalManager.SignalManager(null);
         this.signals.connect(global.stage, "notify::key-focus", Lang.bind(this, this.handleMouseEnter));
-        this.scroll_connector = this.actor.connect("scroll-event", Lang.bind(this, this.handleScroll));
         // set default values
         this.peekPerformed = false;
         this.peekTimeoutId = null;
@@ -83,8 +85,8 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     handleSettings() {
         // apply icon
         if (this.showIcon) {
-            const icon_file = Gio.File.new_for_path(this.iconName);
-            if (icon_file.query_exists(null)) {
+            const iconFile = Gio.File.new_for_path(this.iconName);
+            if (iconFile.query_exists(null)) {
                this.set_applet_icon_path(this.iconName);
             } else {
                this.set_applet_icon_name(this.iconName);
@@ -154,12 +156,27 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
 
     // custom methods
 
+    updateStyles() {
+        this.actor.styleClass = this.styleClassBackup + " showdesktop-applet " + (
+            this.borderPlacement && this.borderPlacement !== "none" ?
+            "showdesktop-applet_border-" + this.borderPlacement:
+            ""
+        );
+    }
+
     resetPeek(time) {
         this.clearPeekTimeout();
         if (this.peekPerformed) {
             this.removeWindowsOpacity(time);
             this.peekPerformed = false;
         }
+    }
+
+    clearPeekTimeout() {
+        if (this.peekTimeoutId && !this.peekPerformed) {
+            clearTimeout(this.peekTimeoutId);
+        }
+        this.peekTimeoutId = null;
     }
 
     addWindowsOpacity(time) {
@@ -205,21 +222,6 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         if (this.opacifyDesklets) {
             Tweener.addTween(Main.deskletContainer.actor, params);
         }
-    }
-
-    updateStyles() {
-        this.actor.styleClass = this.styleClassBackup + " showdesktop-applet " + (
-            this.borderPlacement && this.borderPlacement !== "none" ?
-            "showdesktop-applet_border-" + this.borderPlacement:
-            ""
-        );
-    }
-    
-    clearPeekTimeout() {
-        if (this.peekTimeoutId && !this.peekPerformed) {
-            clearTimeout(this.peekTimeoutId);
-        }
-        this.peekTimeoutId = null;
     }
 
     clearWindowsBlur() {
