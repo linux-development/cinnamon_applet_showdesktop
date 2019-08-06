@@ -25,7 +25,6 @@ const Tweener = imports.ui.tweener;
 const Gtk = imports.gi.Gtk;
 const Clutter = imports.gi.Clutter;
 const SignalManager = imports.misc.signalManager;
-const GLib = imports.gi.GLib;
 
 class ShowDesktopApplet extends Applet.TextIconApplet {
 
