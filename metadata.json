@@ -1,6 +1,8 @@
 {
-    "description": "Click to show/hide desktop, scroll to switch workspace, middle click to activate Expo.",
+    "description": "Click to show/hide desktop, scroll to switch workspace, middle click to activate Expo or Overview.",
     "uuid": "showdesktop@chepkun",
     "name": "ChepKun - Show Desktop",
-    "icon": "user-desktop"
+    "icon": "user-desktop",
+    "version": "1.0",
+    "website": "https://github.com/linux-development/cinnamon_applet_showdesktop"
 }

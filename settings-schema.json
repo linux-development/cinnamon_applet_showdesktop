@@ -84,7 +84,7 @@
         "description": "Opacity level",
         "tooltip": ""
     },
-    "blur": {
+    "enableBlur": {
         "type": "checkbox",
         "default": true,
         "description": "Blur windows",

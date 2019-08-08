@@ -20,15 +20,13 @@ const St = imports.gi.St;
 const Settings = imports.ui.settings;
 const Gio = imports.gi.Gio;
 const Main = imports.ui.main;
-const Lang = imports.lang;
 const Tweener = imports.ui.tweener;
-const Gtk = imports.gi.Gtk;
 const Clutter = imports.gi.Clutter;
 const SignalManager = imports.misc.signalManager;
 
 class ShowDesktopApplet extends Applet.TextIconApplet {
 
-    // default methods
+    // standard methods
     
     constructor(metadata, orientation, panelHeight, instanceId) {
         super(orientation, panelHeight, instanceId);
@@ -53,67 +51,71 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     handleInit(metadata, orientation) {
         try {
             // configure applet
-            Gtk.IconTheme.get_default().append_search_path(metadata.path);
             this.setAllowedLayout(Applet.AllowedLayout.BOTH);
+            // create state and set default values
+            this.state = {
+                'peekPerformed': false,
+                'peekTimeoutId': null,
+                'styleClassBackup': this.actor.styleClass,
+                'orientation': orientation
+            };
+            // create a storage for settings with a list of keys
+            this.settings = {
+                'showIcon': false,
+                'iconName': null,
+                'borderPlacement': null,
+                'buttonWidth': 0,
+                'middleClickAction': null,
+                'enablePeek': false,
+                'peekDelay': 0,
+                'peekOpacity': 0,
+                'enableBlur': false,
+                'opacifyDesklets': false
+            };
             // bind settings
-            this.settings = new Settings.AppletSettings(this, metadata.uuid, this.instance_id);
-            this.settings.bind("showIcon", "showIcon", this.handleSettings);
-            this.settings.bind("iconName", "iconName", this.handleSettings);
-            this.settings.bind("borderPlacement", "borderPlacement", this.handleSettings);
-            this.settings.bind("buttonWidth", "buttonWidth", this.handleSettings);
-            this.settings.bind("middleClickAction", "middleClickAction", null);
-            this.settings.bind("enablePeek", "enablePeek", this.handleSettings);
-            this.settings.bind("peekDelay", "peekDelay", null);
-            this.settings.bind("peekOpacity", "peekOpacity", null);
-            this.settings.bind("blur", "blur", this.handleSettings);
-            this.settings.bind("opacifyDesklets", "opacifyDesklets", null);
-            // connect events
-            this.actor.connect("enter-event", Lang.bind(this, this.handleMouseEnter));
-            this.actor.connect("leave-event", Lang.bind(this, this.handleMouseLeave));        
-            this.actor.connect("scroll-event", Lang.bind(this, this.handleScroll));
+            this.appletSettings = new Settings.AppletSettings(this.settings, metadata.uuid, this.instance_id);
+            for (let key in this.settings) {
+                this.appletSettings.bind(key, key, () => this.handleSettings());
+            }           
             // connect signals
-            this.signals = new SignalManager.SignalManager(null);
-            this.signals.connect(global.stage, "notify::key-focus", Lang.bind(this, this.handleMouseEnter));
-            // set default values
-            this.peekPerformed = false;
-            this.peekTimeoutId = null;
-            this.styleClassBackup = this.actor.styleClass;
-            // set orientation and apply settings
-            this.handleOrientation(orientation);
+            this.signalManager = new SignalManager.SignalManager(null);
+            this.signalManager.connect(global.stage, 'notify::key-focus', () => this.handleMouseEnter());
+            // connect events
+            this.actor.connect('enter-event', () => this.handleMouseEnter());
+            this.actor.connect('leave-event', () => this.handleMouseLeave());        
+            this.actor.connect('scroll-event', (...args) => this.handleScroll(...args));
+            // apply settings
+            this.handleSettings();
         } catch (e) {
             global.logError(e);
         }
     }
 
-    handleOrientation(orientation) {
-        this.orientation = orientation;
-        this.handleSettings();
-    }
-
     handleSettings() {
         // apply icon
-        if (this.showIcon) {
-            const iconFile = Gio.File.new_for_path(this.iconName);
+        if (this.settings.showIcon) {
+            const iconFile = Gio.File.new_for_path(this.settings.iconName);
             if (iconFile.query_exists(null)) {
-               this.set_applet_icon_path(this.iconName);
+               this.set_applet_icon_path(this.settings.iconName);
             } else {
-               this.set_applet_icon_name(this.iconName);
+               this.set_applet_icon_name(this.settings.iconName);
             }
         } else {
             this.hide_applet_icon();
         }
         // apply width
-        if (this.orientation === St.Side.TOP || this.orientation === St.Side.BOTTOM) {
-            this.actor.width = this.buttonWidth;
-        } else {
-            this.actor.height = this.buttonWidth;
-        }
+        this.updateSize();
         // apply styles
         this.updateStyles();
-        // if blur or peek is disabled, check windows to remove blur effect
-        if (!this.enablePeek || !this.blur) {
+        // if blur or peek is disabled, check if need to remove blur effect from windows 
+        if (!this.settings.enablePeek || !this.settings.enableBlur) {
             this.clearWindowsBlur();
         }
+    }
+
+    handleOrientation(orientation) {
+        this.state.orientation = orientation;
+        this.updateSize();
     }
 
     handleButtonPressEvent(event) {
@@ -124,12 +126,12 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             switch (event.get_button()) {
                 // for left button click
                 case 1:
-                    // hide/show all windows
+                    // hide or show all windows
                     global.screen.toggle_desktop(global.get_current_time());
                     break;
                 // for middle button click
                 case 2:
-                    if (this.middleClickAction === "expo") {
+                    if (this.settings.middleClickAction === 'expo') {
                         if (!Main.expo.animationInProgress) {
                             Main.expo.toggle();
                         }
@@ -143,28 +145,27 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
         }
     }
 
-    handleMouseEnter(event) {
-        if (!this.isPanelEditModeEnabled() && this.enablePeek) {
+    handleMouseEnter() {
+        if (!this.isPanelEditModeEnabled() && this.settings.enablePeek) {
             this.clearPeekTimeout();
-            this.peekTimeoutId = setTimeout(() => {
-                if (this.actor.hover &&
-                        !this._applet_context_menu.isOpen) {
-                    this.peekPerformed = true;
+            this.state.peekTimeoutId = setTimeout(() => {
+                if (this.actor.hover && !this._applet_context_menu.isOpen) {
+                    this.state.peekPerformed = true;
                     this.addWindowsOpacity(0.3);
                 }
-            }, this.peekDelay);
+            }, this.settings.peekDelay);
         }
     }
 
-    handleMouseLeave(event) {
+    handleMouseLeave() {
         this.resetPeek(0.2);
     }
 
     handleScroll(actor, event) {
         if (!this.isPanelEditModeEnabled()) {
-            //switch workspace
+            // switch workspace
             const index = global.screen.get_active_workspace_index() + event.get_scroll_direction() * 2 - 1;
-            if (global.screen.get_workspace_by_index(index) !== null) {
+            if (global.screen.get_workspace_by_index(index)) {
                 this.resetPeek(0);
                 global.screen.get_workspace_by_index(index).activate(global.get_current_time());
             }
@@ -172,60 +173,74 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     handleRemoveFromPanel() {
-        this.resetPeek(0);
-        this.clearWindowsBlur();
-        this.settings.finalize();
-        this.signals.disconnectAllSignals();
+        try {
+            this.resetPeek(0);
+            this.clearWindowsBlur();
+            this.appletSettings.finalize();
+            this.signalManager.disconnectAllSignals();
+        } catch (e) {
+            global.logError(e);
+        }
     }
 
     // custom methods
 
+    updateSize() {
+        if (this.state.orientation === St.Side.TOP || this.state.orientation === St.Side.BOTTOM) {
+            this.actor.width = this.settings.buttonWidth;
+        } else {
+            this.actor.height = this.settings.buttonWidth;
+        } 
+    }
+
     updateStyles() {
-        this.actor.styleClass = this.styleClassBackup + " showdesktop-applet " + (
-            this.borderPlacement && this.borderPlacement !== "none" ?
-            "showdesktop-applet_border-" + this.borderPlacement:
-            ""
+        this.actor.styleClass = this.state.styleClassBackup + ' showdesktop-applet ' + (
+            this.settings.borderPlacement && this.settings.borderPlacement !== 'none' ?
+            'showdesktop-applet_border-' + this.settings.borderPlacement:
+            ''
         );
     }
 
     resetPeek(time) {
         this.clearPeekTimeout();
-        if (this.peekPerformed) {
+        if (this.state.peekPerformed) {
             this.removeWindowsOpacity(time);
-            this.peekPerformed = false;
+            this.state.peekPerformed = false;
         }
     }
 
     clearPeekTimeout() {
-        if (this.peekTimeoutId && !this.peekPerformed) {
-            clearTimeout(this.peekTimeoutId);
+        if (this.state.peekTimeoutId && !this.state.peekPerformed) {
+            clearTimeout(this.state.peekTimeoutId);
         }
-        this.peekTimeoutId = null;
+        this.state.peekTimeoutId = null;
     }
 
     addWindowsOpacity(time) {
-        // add blur if enabled
-        if (this.blur) {
-            for (let window of global.get_window_actors()) {
-                // don't add blur to icons on the desktop
-                if (window.meta_window.get_title() !== "Desktop") {     
+        if (this.settings.enableBlur) {
+            let windowActors = global.get_window_actors();
+            // using classic FOR loop as it's just faster than modern loops, don't change!
+            for (let i = 0, length = windowActors.length; i < length; i++) {
+                let window = windowActors[i];
+                // no need to add blur to icons on the desktop
+                if (window.meta_window.get_title() !== 'Desktop') {     
                     if (!window.showDesktopBlurEffect) {
                         window.showDesktopBlurEffect = new Clutter.BlurEffect();
                     }
-                    window.add_effect_with_name("blur", window.showDesktopBlurEffect);
+                    window.add_effect_with_name('blur', window.showDesktopBlurEffect);
                 }
             }
-        }
-        // set opacity         
-        this.setWindowsOpacity(255 - (255/100 * this.peekOpacity), time);
+        }        
+        this.setWindowsOpacity(255 - (255/100 * this.settings.peekOpacity), time);
     }
 
     removeWindowsOpacity(time) {
-        // set opacity
         this.setWindowsOpacity(255, time);        
-        // remove blur if enabled
-        if (this.blur) {
-            for (let window of global.get_window_actors()) {         
+        if (this.settings.enableBlur) {
+            let windowActors = global.get_window_actors();
+            // using classic FOR loop as it's just faster than modern loops, don't change!
+            for (let i = 0, length = windowActors.length; i < length; i++) {
+                let window = windowActors[i];      
                 if (window.showDesktopBlurEffect) {
                     window.remove_effect(window.showDesktopBlurEffect);
                 }
@@ -235,18 +250,21 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     
     setWindowsOpacity(opacity, time) {
         const params = {
-            "opacity": opacity,
-            "time": time,
-            "transition": "easeOutSine"
+            'opacity': opacity,
+            'time': time,
+            'transition': 'easeOutSine'
         };
         Tweener.addTween(global.window_group, params);
-        if (this.opacifyDesklets) {
+        if (this.settings.opacifyDesklets) {
             Tweener.addTween(Main.deskletContainer.actor, params);
         }
     }
 
     clearWindowsBlur() {
-        for (let window of global.get_window_actors()) {         
+        let windowActors = global.get_window_actors();
+        // using classic FOR loop as it's just faster than modern loops, don't change!
+        for (let i = 0, length = windowActors.length; i < length; i++) {
+            let window = windowActors[i];      
             if (window.showDesktopBlurEffect) {
                 window.showDesktopBlurEffect = null;
             }
@@ -254,7 +272,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     isPanelEditModeEnabled() {
-        return global.settings.get_boolean("panel-edit-mode");
+        return global.settings.get_boolean('panel-edit-mode');
     }
 
 };
