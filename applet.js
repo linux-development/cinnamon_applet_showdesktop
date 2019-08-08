@@ -116,6 +116,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     handleOrientation(orientation) {
         this.state.orientation = orientation;
         this.updateSize();
+        this.updateStyles();
     }
 
     handleButtonPressEvent(event) {
@@ -186,7 +187,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     // custom methods
 
     updateSize() {
-        if (this.state.orientation === St.Side.TOP || this.state.orientation === St.Side.BOTTOM) {
+        if (this.isHorizontal()) {
             this.actor.width = this.settings.buttonWidth;
         } else {
             this.actor.height = this.settings.buttonWidth;
@@ -194,11 +195,25 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     updateStyles() {
-        this.actor.styleClass = this.state.styleClassBackup + ' showdesktop-applet ' + (
-            this.settings.borderPlacement && this.settings.borderPlacement !== 'none' ?
-            'showdesktop-applet_border-' + this.settings.borderPlacement:
-            ''
-        );
+        // restore initial styles classes from the backup
+        this.actor.styleClass = this.state.styleClassBackup;
+        // add applet style class
+        this.actor.add_style_class_name('showdesktop-applet');
+        // add border style classes
+        if (this.settings.borderPlacement === 'before' || this.settings.borderPlacement === 'both') {
+            if (this.isHorizontal()) {
+                this.actor.add_style_class_name('showdesktop-applet_border-left');
+            } else {
+                this.actor.add_style_class_name('showdesktop-applet_border-top');
+            }
+        }
+        if (this.settings.borderPlacement === 'after' || this.settings.borderPlacement === 'both') {
+            if (this.isHorizontal()) {
+                this.actor.add_style_class_name('showdesktop-applet_border-right');
+            } else {
+                this.actor.add_style_class_name('showdesktop-applet_border-bottom');
+            }
+        }
     }
 
     resetPeek(time) {
@@ -269,6 +284,10 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
                 window.showDesktopBlurEffect = null;
             }
         }
+    }
+
+    isHorizontal() {
+        return this.state.orientation === St.Side.TOP || this.state.orientation === St.Side.BOTTOM;
     }
 
     isPanelEditModeEnabled() {

@@ -22,10 +22,9 @@
         "description": "Border placement",
         "options": {
             "None": "none",
-            "Left": "left",
-            "Right": "right",
-            "Top": "top",
-            "Bottom": "bottom"
+            "Before": "before",
+            "After": "after",
+            "Both": "both"
         },
         "tooltip": ""
     },
