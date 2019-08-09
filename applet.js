@@ -79,7 +79,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             }           
             // connect signals
             this.signalManager = new SignalManager.SignalManager(null);
-            this.signalManager.connect(global.stage, 'notify::key-focus', () => this.handleMouseEnter());
+            this.signalManager.connect(global.stage, 'notify::key-focus', () => this.handleMouseLeave());
             // connect events
             this.actor.connect('enter-event', () => this.handleMouseEnter());
             this.actor.connect('leave-event', () => this.handleMouseLeave());        
@@ -147,6 +147,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     handleMouseEnter() {
+        this.updateTooltip();
         if (!this.isPanelEditModeEnabled() && this.settings.enablePeek) {
             this.clearPeekTimeout();
             this.state.peekTimeoutId = setTimeout(() => {
@@ -169,6 +170,7 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
             if (global.screen.get_workspace_by_index(index)) {
                 this.resetPeek(0);
                 global.screen.get_workspace_by_index(index).activate(global.get_current_time());
+                this.updateTooltip();
             }
         }
     }
@@ -214,6 +216,10 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
                 this.actor.add_style_class_name('showdesktop-applet_border-bottom');
             }
         }
+    }
+
+    updateTooltip() {
+        this.set_applet_tooltip(Main.getWorkspaceName(global.screen.get_active_workspace_index()));
     }
 
     resetPeek(time) {
