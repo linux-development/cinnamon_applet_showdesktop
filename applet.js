@@ -42,8 +42,8 @@ class ShowDesktopApplet extends Applet.TextIconApplet {
     }
 
     _onButtonPressEvent(actor, event) {
+        super._onButtonPressEvent(actor, event);
         this.handleButtonPressEvent(event);
-        return Applet.Applet.prototype._onButtonPressEvent.call(this, actor, event);
     }
     
     // custom handlers
